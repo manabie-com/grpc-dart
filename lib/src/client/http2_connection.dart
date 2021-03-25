@@ -17,6 +17,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:grpc/src/shared/grpc_utils.dart';
 import 'package:http2/transport.dart';
 import 'package:meta/meta.dart';
 
@@ -133,9 +134,17 @@ class Http2ClientConnection implements connection.ClientConnection {
   }
 
   @override
-  void dispatchCall(ClientCall call) {
+  void dispatchCall(ClientCall call) async {
     if (_transportConnection != null) {
       _refreshConnectionIfUnhealthy();
+    }
+    if (asyncInterceptor != null &&
+        call.options.metadata[ignoreInterceptorKey] != true.toString()) {
+      call.options = CallOptions(
+        metadata: (await asyncInterceptor!())..addAll(call.options.metadata),
+        timeout: call.options.timeout,
+        providers: call.options.metadataProviders,
+      );
     }
     switch (_state) {
       case ConnectionState.ready:

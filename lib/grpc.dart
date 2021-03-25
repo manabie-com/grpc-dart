@@ -65,3 +65,5 @@ export 'src/shared/security.dart'
 export 'src/shared/status.dart' show StatusCode, GrpcError;
 export 'src/shared/streams.dart' show GrpcHttpEncoder, GrpcHttpDecoder;
 export 'src/shared/timeout.dart' show toTimeoutString, fromTimeoutString;
+export 'src/client/channel.dart' show ClientChannelBase;
+export 'src/shared/grpc_utils.dart';

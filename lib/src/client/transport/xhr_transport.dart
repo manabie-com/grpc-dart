@@ -17,6 +17,7 @@ import 'dart:async';
 import 'dart:html';
 import 'dart:typed_data';
 
+import 'package:grpc/src/shared/grpc_utils.dart';
 import 'package:meta/meta.dart';
 
 import '../../client/call.dart';
@@ -44,6 +45,7 @@ class XhrTransportStream implements GrpcTransportStream {
   final StreamController<ByteBuffer> _incomingProcessor = StreamController();
   final StreamController<GrpcMessage> _incomingMessages = StreamController();
   final StreamController<List<int>> _outgoingMessages = StreamController();
+  final bool ignoreInterceptor;
 
   @override
   Stream<GrpcMessage> get incomingMessages => _incomingMessages.stream;
@@ -51,13 +53,20 @@ class XhrTransportStream implements GrpcTransportStream {
   @override
   StreamSink<List<int>> get outgoingMessages => _outgoingMessages.sink;
 
-  XhrTransportStream(this._request,
-      {required ErrorHandler onError, required onDone})
+  XhrTransportStream(this._request, this.ignoreInterceptor, {onError, onDone})
       : _onError = onError,
         _onDone = onDone {
-    _outgoingMessages.stream
-        .map(frame)
-        .listen((data) => _request.send(data), cancelOnError: true);
+    _outgoingMessages.stream.map(frame).listen((data) async {
+      if (asyncInterceptor != null && !ignoreInterceptor) {
+        final metadata = await asyncInterceptor!();
+        if(metadata.isNotEmpty) {
+          for (final header in metadata.keys) {
+            _request.setRequestHeader(header, metadata[header] ?? '');
+          }
+        }
+      }
+      return _request.send(data);
+    }, cancelOnError: true);
 
     _request.onReadyStateChange.listen((data) {
       if (_incomingProcessor.isClosed) {
@@ -187,6 +196,12 @@ class XhrClientConnection extends ClientConnection {
   GrpcTransportStream makeRequest(String path, Duration? timeout,
       Map<String, String> metadata, ErrorHandler onError,
       {CallOptions? callOptions}) {
+    // Difference
+    final ignoreInterceptor = metadata == null
+        ? false
+        : metadata[ignoreInterceptorKey] == true.toString();
+    metadata.remove(ignoreInterceptorKey);
+
     // gRPC-web headers.
     if (_getContentTypeHeader(metadata) == null) {
       metadata['Content-Type'] = 'application/grpc-web+proto';
@@ -200,7 +215,7 @@ class XhrClientConnection extends ClientConnection {
       requestUri = cors.moveHttpHeadersToQueryParam(metadata, requestUri);
     }
 
-    final request = createHttpRequest();
+    final HttpRequest request = createHttpRequest();
     request.open('POST', requestUri.toString());
     if (callOptions is WebCallOptions && callOptions.withCredentials == true) {
       request.withCredentials = true;
@@ -208,8 +223,10 @@ class XhrClientConnection extends ClientConnection {
     // Must set headers after calling open().
     _initializeRequest(request, metadata);
 
-    final transportStream =
-        XhrTransportStream(request, onError: onError, onDone: _removeStream);
+    // Difference
+    final XhrTransportStream transportStream = XhrTransportStream(
+        request, ignoreInterceptor,
+        onError: onError, onDone: _removeStream);
     _requests.add(transportStream);
     return transportStream;
   }

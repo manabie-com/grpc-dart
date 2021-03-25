@@ -15,6 +15,8 @@
 
 import 'dart:async';
 
+import 'package:grpc/src/shared/grpc_utils.dart';
+
 import '../shared/profiler.dart';
 import '../shared/status.dart';
 
@@ -95,6 +97,13 @@ abstract class ClientChannelBase implements ClientChannel {
       if (call.isCancelled) return;
       connection.dispatchCall(call);
     }, onError: call.onConnectionError);
+
+    // Difference
+    call.headers.then((Map<String, String> value) {
+      if (grpcHeadersCallback != null) {
+        grpcHeadersCallback!(value);
+      }
+    });
     return call;
   }
 }
