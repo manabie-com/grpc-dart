@@ -15,7 +15,9 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:grpc/src/shared/grpc_utils.dart';
+import 'package:http/http.dart' as http;
 
 import '../shared/profiler.dart';
 import '../shared/status.dart';
@@ -79,6 +81,9 @@ abstract class ClientChannelBase implements ClientChannel {
     if (!_connected) {
       _connection = createConnection();
       _connected = true;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await http.get(Uri.parse('http://example.com/'));
     }
     return _connection;
   }
