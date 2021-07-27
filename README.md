@@ -54,6 +54,11 @@ grpcHeadersCallback = (Map<String, String> values) {
 };
 ```
 
+### **Check internet feature for iOS:**
+```dart
+partnerWebApiHost = flavorConfig.webHostApi;
+```
+
 ------
 ## **Upgrading latest stable grpc library and add custom features: async interceptor, ignore interceptor, headers callback:**
 
@@ -310,5 +315,34 @@ To:
       }
     });
     return call;
+  }
+```
+
+### **Step 5: Check internet feature for iOS:**
+- In `lib/src/client/channel.dart` at `getConnection()` function add following code:
+
+From:
+```dart
+  Future<ClientConnection> getConnection() async {
+    if (_isShutdown) throw GrpcError.unavailable('Channel shutting down.');
+    if (!_connected) {
+      _connection = createConnection();
+      _connected = true;
+    }
+    return _connection;
+  }
+```
+To:
+```dart
+  Future<ClientConnection> getConnection() async {
+    if (_isShutdown) throw GrpcError.unavailable('Channel shutting down.');
+    if (!_connected) {
+      _connection = createConnection();
+      _connected = true;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await http.get(Uri.parse(partnerWebApiHost));
+    }
+    return _connection;
   }
 ```

@@ -83,7 +83,7 @@ abstract class ClientChannelBase implements ClientChannel {
       _connected = true;
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      await http.get(Uri.parse('http://example.com/'));
+      await http.get(Uri.parse(partnerWebApiHost));
     }
     return _connection;
   }
