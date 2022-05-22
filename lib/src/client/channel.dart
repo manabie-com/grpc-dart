@@ -21,7 +21,6 @@ import 'package:http/http.dart' as http;
 
 import '../shared/profiler.dart';
 import '../shared/status.dart';
-
 import 'call.dart';
 import 'connection.dart';
 import 'method.dart';
@@ -82,6 +81,11 @@ abstract class ClientChannelBase implements ClientChannel {
       _connection = createConnection();
       _connected = true;
     }
+
+    if (getClientConnection != null && _connected) {
+      _connection = getClientConnection!.call();
+    }
+
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       await http.get(Uri.parse(partnerWebApiHost));
     }
