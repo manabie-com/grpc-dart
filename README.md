@@ -340,7 +340,7 @@ To:
       _connection = createConnection();
       _connected = true;
     }
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
+    if (Platform.isIOS) {
       await http.get(Uri.parse(partnerWebApiHost));
     }
     return _connection;
