@@ -15,10 +15,10 @@
 
 import 'dart:async';
 
-import 'dart:io' show Platform;
-import 'package:grpc/src/shared/grpc_utils.dart';
 import 'package:http/http.dart' as http;
 
+import '../shared/grpc_utils.dart';
+import '../shared/platform/platform.dart';
 import '../shared/profiler.dart';
 import '../shared/status.dart';
 
@@ -82,7 +82,7 @@ abstract class ClientChannelBase implements ClientChannel {
       _connection = createConnection();
       _connected = true;
     }
-    if (Platform.isIOS) {
+    if (isIOS) {
       await http.get(Uri.parse(partnerWebApiHost));
     }
     return _connection;
